@@ -341,6 +341,26 @@
   }
   .btn-calcular:hover  { background: var(--m-gold-400); }
   .btn-calcular:active { transform: scale(0.99); }
+  
+  .btn-limpar {
+    display: block; width: 100%;
+    margin-top: 12px;
+    padding: 12px 32px;
+    background: transparent;
+    color: var(--text-faint);
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 2px; text-transform: uppercase;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+  }
+  .btn-limpar:hover { 
+    border-color: var(--border-strong); 
+    color: var(--text-muted); 
+    background: rgba(248,113,113,0.05);
+  }
 
   .progress-row {
     display: flex; gap: 4px;
@@ -392,7 +412,7 @@
   .btn-pdf:hover { background: rgba(201,168,76,0.08); }
 
   @media print {
-    .score-bar, .btn-calcular, .btn-state, .btn-pdf { display: none !important; }
+    .score-bar, .btn-calcular, .btn-limpar, .btn-state, .btn-pdf { display: none !important; }
     body { background: white; color: black; }
   }
 </style>
@@ -422,6 +442,7 @@
   <div id="auditoria"></div>
 
   <button class="btn-calcular" onclick="calcularResultado()">Ver meu resultado</button>
+  <button class="btn-limpar" onclick="limparRespostas()">↻ Limpar todas as respostas</button>
 
   <div class="resultado" id="resultado">
     <span class="resultado__eyebrow">Resultado da Auditoria</span>
@@ -751,6 +772,60 @@ function carregarLocal() {
     const saved = JSON.parse(localStorage.getItem('palco_auditoria_isca_v1') || '{}');
     Object.entries(saved).forEach(([id, state]) => setState(parseInt(id), state));
   } catch(e) {}
+}
+
+function limparRespostas() {
+  if (Object.keys(states).length === 0) {
+    alert('Não há respostas para limpar.');
+    return;
+  }
+  
+  const confirmacao = confirm('Tem certeza que deseja limpar todas as respostas?\n\nEsta ação não pode ser desfeita.');
+  if (!confirmacao) return;
+  
+  // Limpa o objeto states
+  for (let id in states) {
+    delete states[id];
+  }
+  
+  // Remove todas as classes visuais
+  ITEMS.forEach(cat => cat.items.forEach(item => {
+    const card = document.getElementById(`card-${item.id}`);
+    const dot = document.getElementById(`dot-${item.id}`);
+    
+    if (card) {
+      card.classList.remove('state-ok', 'state-warn', 'state-fail');
+    }
+    
+    if (dot) {
+      dot.classList.remove('ok', 'warn', 'fail');
+    }
+    
+    // Remove classes ativas dos botões
+    ['ok', 'warn', 'fail'].forEach(state => {
+      const btn = document.getElementById(`btn-${state}-${item.id}`);
+      if (btn) {
+        btn.classList.remove('active-ok', 'active-warn', 'active-fail');
+      }
+    });
+  }));
+  
+  // Esconde o resultado
+  const resultado = document.getElementById('resultado');
+  if (resultado) {
+    resultado.classList.remove('visible');
+  }
+  
+  // Atualiza a barra de progresso
+  updateScore();
+  
+  // Remove do localStorage
+  localStorage.removeItem('palco_auditoria_isca_v1');
+  
+  // Scroll para o topo
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  alert('Todas as respostas foram limpas. Você pode começar novamente!');
 }
 
 render();
